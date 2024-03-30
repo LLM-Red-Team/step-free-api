@@ -395,10 +395,7 @@ function messagesPrepare(convId: string, messages: any[]) {
           }, content);
       }
       return (content += `${message.role || "user"}:${message.content}\n`);
-    }, "")
-    .replace(/[\n"\\]/g, function(e) {
-      return "\\" + e.charCodeAt(0).toString(16) + " "
-    });
+    }, "");
   const json = JSON.stringify({
     chatId: convId,
     messageInfo: {
