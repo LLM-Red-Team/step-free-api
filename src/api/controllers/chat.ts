@@ -6,7 +6,6 @@ import axios, { AxiosResponse } from "axios";
 
 import APIException from "@/lib/exceptions/APIException.ts";
 import EX from "@/api/consts/exceptions.ts";
-import { createParser } from "eventsource-parser";
 import logger from "@/lib/logger.ts";
 import util from "@/lib/util.ts";
 
@@ -14,8 +13,6 @@ import util from "@/lib/util.ts";
 const MODEL_NAME = "step";
 // access_token有效期
 const ACCESS_TOKEN_EXPIRES = 900;
-// 设备ID有效期
-const DEVICE_ID_EXPIRES = 7200;
 // 最大重试次数
 const MAX_RETRY_COUNT = 0;
 // 重试延迟
@@ -395,26 +392,20 @@ function messagesPrepare(convId: string, messages: any[]) {
           .reduce((_content, v) => {
             if (!_.isObject(v) || v["type"] != "text") return _content;
             return _content + (v["text"] || "");
-          }, content)
-          .replace(/\n/g, "\\\\\\n");
+          }, content);
       }
-      return (content += `${message.role || "user"}:${message.content.replace(
-        /\n/g,
-        "\\\\\\n"
-      )}\n`);
+      return (content += `${message.role || "user"}:${message.content}\n`);
     }, "")
-    .replace(/\n/g, "\\n");
-  // 将消息转换为json
+    .replace(/[\n"\\]/g, function(e) {
+      return "\\" + e.charCodeAt(0).toString(16) + " "
+    });
   const json = JSON.stringify({
     chatId: convId,
     messageInfo: {
       text: content,
     },
   });
-  // 计算内容的字节数并转换为头部十六进制数据头然后尾部拼接json
-  const data = `${generateDataHeader(
-    Buffer.byteLength(json)
-  ).toString()}${json}`;
+  const data = wrapData(json);
   return data;
 }
 
@@ -459,8 +450,10 @@ async function receiveStream(model: string, convId: string, stream: any) {
     let refContent = "";
     const parser = (buffer: Buffer) => {
       const result = _.attempt(() => JSON.parse(buffer.toString()));
-      if (_.isError(result))
+      if (_.isError(result)) {
+        logger.warn(`Error response: ${buffer.toString()}`);
         throw new Error(`Stream response invalid: ${result}`);
+      }
       if (result.pipelineEvent) {
         if (
           result.pipelineEvent.eventSearch &&
@@ -664,11 +657,17 @@ function createTransStream(
 }
 
 /**
- * 生成数据头
+ * 构建数据包
+ * 
+ * @param json 需要发送的JSON字符串
  */
-function generateDataHeader(byteLength: number) {
-  const buffer = Buffer.alloc(5);
-  buffer.writeUInt32BE(byteLength, 1);
+function wrapData(json: string) {
+  const data = Buffer.from(json);
+  const buffer = Buffer.alloc(data.length + 5);
+  buffer.set(data, 5);
+  const dataView = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+  dataView.setUint8(0, 0x00);
+  dataView.setUint32(1, data.length);
   return buffer;
 }
 
