@@ -146,7 +146,7 @@ async function createConversation(name: string, refreshToken: string) {
     },
     {
       headers: {
-        Cookie: generationCookie(deviceId, token),
+        Cookie: generateCookie(deviceId, token),
         "Oasis-Webid": deviceId,
         Referer: "https://stepchat.cn/chats/new",
         ...FAKE_HEADERS,
@@ -175,7 +175,7 @@ async function removeConversation(convId: string, refreshToken: string) {
     },
     {
       headers: {
-        Cookie: generationCookie(deviceId, token),
+        Cookie: generateCookie(deviceId, token),
         "Oasis-Webid": deviceId,
         Referer: `https://stepchat.cn/chats/${convId}`,
         ...FAKE_HEADERS,
@@ -221,7 +221,7 @@ async function createCompletion(
       {
         headers: {
           "Content-Type": "application/connect+json",
-          Cookie: generationCookie(deviceId, token),
+          Cookie: generateCookie(deviceId, token),
           "Oasis-Webid": deviceId,
           Referer: `https://stepchat.cn/chats/${convId}`,
           ...FAKE_HEADERS,
@@ -301,7 +301,7 @@ async function createCompletionStream(
       {
         headers: {
           "Content-Type": "application/connect+json",
-          Cookie: generationCookie(deviceId, token),
+          Cookie: generateCookie(deviceId, token),
           "Oasis-Webid": deviceId,
           Referer: `https://stepchat.cn/chats/${convId}`,
           ...FAKE_HEADERS,
@@ -385,17 +385,15 @@ function extractRefFileUrls(messages: any[]) {
  * @param messages 参考gpt系列消息格式，多轮对话请完整提供上下文
  */
 function messagesPrepare(convId: string, messages: any[]) {
-  const content = messages
-    .reduce((content, message) => {
-      if (_.isArray(message.content)) {
-        return message.content
-          .reduce((_content, v) => {
-            if (!_.isObject(v) || v["type"] != "text") return _content;
-            return _content + (v["text"] || "");
-          }, content);
-      }
-      return (content += `${message.role || "user"}:${message.content}\n`);
-    }, "");
+  const content = messages.reduce((content, message) => {
+    if (_.isArray(message.content)) {
+      return message.content.reduce((_content, v) => {
+        if (!_.isObject(v) || v["type"] != "text") return _content;
+        return _content + (v["text"] || "");
+      }, content);
+    }
+    return (content += `${message.role || "user"}:${message.content}\n`);
+  }, "");
   const json = JSON.stringify({
     chatId: convId,
     messageInfo: {
@@ -451,7 +449,9 @@ async function receiveStream(model: string, convId: string, stream: any) {
         logger.warn(`Error response: ${buffer.toString()}`);
         throw new Error(`Stream response invalid: ${result}`);
       }
-      if (result.pipelineEvent) {
+      if (result.error && result.error.code)
+        data.choices[0].message.content += `服务暂时不可用，第三方响应错误：[${result.error.code}] ${result.error.message}`;
+      else if (result.pipelineEvent) {
         if (
           result.pipelineEvent.eventSearch &&
           result.pipelineEvent.eventSearch.results
@@ -463,10 +463,9 @@ async function receiveStream(model: string, convId: string, stream: any) {
             ""
           );
         }
-      }
-      if (result.textEvent && result.textEvent.text)
+      } else if (result.textEvent && result.textEvent.text)
         data.choices[0].message.content += result.textEvent.text;
-      if (result.doneEvent) {
+      else if (result.doneEvent) {
         data.choices[0].message.content += refContent
           ? `\n\n搜索结果来自：\n${refContent.replace(/\n$/, "")}`
           : "";
@@ -480,7 +479,7 @@ async function receiveStream(model: string, convId: string, stream: any) {
       let i = 0;
       for (i = 0; i < buffer.byteLength; i++) {
         const byte = buffer.readUInt8(i);
-        if (byte == 0x00) {
+        if (byte == 0x00 || byte == 0x02) {
           if (length > 4) {
             const subBuffer = Buffer.alloc(length - (5 - sizeLength));
             const subStart = i - length + (5 - sizeLength);
@@ -548,7 +547,27 @@ function createTransStream(
     const result = _.attempt(() => JSON.parse(buffer.toString()));
     if (_.isError(result))
       throw new Error(`Stream response invalid: ${result}`);
-    if (result.pipelineEvent) {
+    if (result.error && result.error.code) {
+      const data = `data: ${JSON.stringify({
+        id: convId,
+        model,
+        object: "chat.completion.chunk",
+        choices: [
+          {
+            index: 0,
+            delta: {
+              content: `服务暂时不可用，第三方响应错误：[${result.error.code}] ${result.error.message}`,
+            },
+            finish_reason: "stop",
+          },
+        ],
+        usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+        created,
+      })}\n\n`;
+      !transStream.closed && transStream.write(data);
+      !transStream.closed && transStream.end("data: [DONE]\n\n");
+      endCallback && endCallback();
+    } else if (result.pipelineEvent) {
       if (
         result.pipelineEvent.eventSearch &&
         result.pipelineEvent.eventSearch.results
@@ -558,24 +577,25 @@ function createTransStream(
             return (str += `检索 ${v.title}(${v.url}) ...\n`);
           },
           ""
-        )
+        );
         const data = `data: ${JSON.stringify({
           id: convId,
           model,
-          object: 'chat.completion.chunk',
+          object: "chat.completion.chunk",
           choices: [
             {
-              index: 0, delta: {
-                content: `${refContent}\n`
-              }, finish_reason: null
-            }
+              index: 0,
+              delta: {
+                content: `${refContent}\n`,
+              },
+              finish_reason: null,
+            },
           ],
-          created
+          created,
         })}\n\n`;
         !transStream.closed && transStream.write(data);
       }
-    }
-    if (result.textEvent && result.textEvent.text) {
+    } else if (result.textEvent && result.textEvent.text) {
       const data = `data: ${JSON.stringify({
         id: convId,
         model,
@@ -590,8 +610,7 @@ function createTransStream(
         created,
       })}\n\n`;
       !transStream.closed && transStream.write(data);
-    }
-    if (result.doneEvent) {
+    } else if (result.doneEvent) {
       const data = `data: ${JSON.stringify({
         id: convId,
         model,
@@ -619,7 +638,7 @@ function createTransStream(
     let i = 0;
     for (i = 0; i < buffer.byteLength; i++) {
       const byte = buffer.readUInt8(i);
-      if (byte == 0x00) {
+      if (byte == 0x00 || byte == 0x02) {
         if (length > 4) {
           const subBuffer = Buffer.alloc(length - (5 - sizeLength));
           const subStart = i - length + (5 - sizeLength);
@@ -655,14 +674,18 @@ function createTransStream(
 
 /**
  * 构建数据包
- * 
+ *
  * @param json 需要发送的JSON字符串
  */
 function wrapData(json: string) {
   const data = Buffer.from(json);
   const buffer = Buffer.alloc(data.length + 5);
   buffer.set(data, 5);
-  const dataView = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+  const dataView = new DataView(
+    buffer.buffer,
+    buffer.byteOffset,
+    buffer.byteLength
+  );
   dataView.setUint8(0, 0x00);
   dataView.setUint32(1, data.length);
   return buffer;
@@ -671,7 +694,7 @@ function wrapData(json: string) {
 /**
  * 生成cookie
  */
-function generationCookie(deviceId: string, accessToken: string) {
+function generateCookie(deviceId: string, accessToken: string) {
   return [`Oasis-Token=${accessToken}`, `Oasis-Webid=${deviceId}`].join("; ");
 }
 
