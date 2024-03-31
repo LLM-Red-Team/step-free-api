@@ -5,5 +5,7 @@ export default {
     API_TOKEN_EXPIRES: [-2002, 'Token已失效'],
     API_FILE_URL_INVALID: [-2003, '远程文件URL非法'],
     API_FILE_EXECEEDS_SIZE: [-2004, '远程文件超出大小'],
-    API_CHAT_STREAM_PUSHING: [-2005, '已有对话流正在输出']
+    API_CHAT_STREAM_PUSHING: [-2005, '已有对话流正在输出'],
+    API_FILE_UPLOAD_FAILED: [-2006, '文件上传失败'],
+    API_FILE_UPLOAD_TIMEOUT: [-2007, '文件上传超时']
 }

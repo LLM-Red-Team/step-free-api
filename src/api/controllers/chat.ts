@@ -207,8 +207,12 @@ async function createCompletion(
     logger.info(messages);
 
     // 提取引用文件URL并上传step获得引用的文件ID列表
-    // const refFileUrls = extractRefFileUrls(messages);
-    // const refs = refFileUrls.length ? await Promise.all(refFileUrls.map(fileUrl => uploadFile(fileUrl, refreshToken))) : [];
+    const refFileUrls = extractRefFileUrls(messages);
+    const refs = refFileUrls.length
+      ? await Promise.all(
+          refFileUrls.map((fileUrl) => uploadFile(fileUrl, refreshToken))
+        )
+      : [];
 
     // 创建会话
     const convId = await createConversation("新会话", refreshToken);
@@ -217,7 +221,7 @@ async function createCompletion(
     const { deviceId, token } = await acquireToken(refreshToken);
     const result = await axios.post(
       `https://stepchat.cn/api/proto.chat.v1.ChatMessageService/SendMessageStream`,
-      messagesPrepare(convId, messages),
+      messagesPrepare(convId, messages, refs),
       {
         headers: {
           "Content-Type": "application/connect+json",
@@ -283,12 +287,12 @@ async function createCompletionStream(
     logger.info(messages);
 
     // 提取引用文件URL并上传step获得引用的文件ID列表
-    // const refFileUrls = extractRefFileUrls(messages);
-    // const refs = refFileUrls.length
-    //   ? await Promise.all(
-    //       refFileUrls.map((fileUrl) => uploadFile(fileUrl, refreshToken))
-    //     )
-    //   : [];
+    const refFileUrls = extractRefFileUrls(messages);
+    const refs = refFileUrls.length
+      ? await Promise.all(
+          refFileUrls.map((fileUrl) => uploadFile(fileUrl, refreshToken))
+        )
+      : [];
 
     // 创建会话
     const convId = await createConversation("新会话", refreshToken);
@@ -297,7 +301,7 @@ async function createCompletionStream(
     const { deviceId, token } = await acquireToken(refreshToken);
     const result = await axios.post(
       `https://stepchat.cn/api/proto.chat.v1.ChatMessageService/SendMessageStream`,
-      messagesPrepare(convId, messages),
+      messagesPrepare(convId, messages, refs),
       {
         headers: {
           "Content-Type": "application/connect+json",
@@ -384,7 +388,7 @@ function extractRefFileUrls(messages: any[]) {
  *
  * @param messages 参考gpt系列消息格式，多轮对话请完整提供上下文
  */
-function messagesPrepare(convId: string, messages: any[]) {
+function messagesPrepare(convId: string, messages: any[], refs: any[]) {
   const content = messages.reduce((content, message) => {
     if (_.isArray(message.content)) {
       return message.content.reduce((_content, v) => {
@@ -398,6 +402,7 @@ function messagesPrepare(convId: string, messages: any[]) {
     chatId: convId,
     messageInfo: {
       text: content,
+      attachments: refs.length > 0 ? refs : undefined,
     },
   });
   const data = wrapData(json);
@@ -696,6 +701,142 @@ function wrapData(json: string) {
  */
 function generateCookie(deviceId: string, accessToken: string) {
   return [`Oasis-Token=${accessToken}`, `Oasis-Webid=${deviceId}`].join("; ");
+}
+
+/**
+ * 预检查文件URL有效性
+ *
+ * @param fileUrl 文件URL
+ */
+async function checkFileUrl(fileUrl: string) {
+  if (util.isBASE64Data(fileUrl)) return;
+  const result = await axios.head(fileUrl, {
+    timeout: 15000,
+    headers: {
+      Cookie:
+        "INGRESSCOOKIE=1711735363.098.26095.391795|cdfd1cd25bff0dd747986e2907e40a4e; Oasis-Webid=9b4315f03ff3e2abdf7a0b6eb1d41b293ac6fa12; Oasis-Token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY3RpdmF0ZWQiOmZhbHNlLCJhZ2UiOjgsImJhbmVkIjpmYWxzZSwiZXhwIjoxNzExOTAzODkxLCJtb2RlIjoyLCJvYXNpc19pZCI6ODM1NDA2NzE4ODA5NTM4NTYsInZlcnNpb24iOjF9.KrkngKk8drUVfgRBnEE3A07JKjmqgHL3c7J5PlMxKWw...eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcHBfaWQiOjEwMzAwLCJkZXZpY2VfaWQiOiI5YjQzMTVmMDNmZjNlMmFiZGY3YTBiNmViMWQ0MWIyOTNhYzZmYTEyIiwiZXhwIjoxNzEzMDMxMzkxLCJvYXNpc19pZCI6ODM1NDA2NzE4ODA5NTM4NTYsInZlcnNpb24iOjF9.HRfkpUOFNGO0Jm6wvijGg9PzxD9d9-j4gXh4eqOkAKk",
+      Referer: "https://platform.stepfun.com/",
+      UserAgent:
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+    },
+    validateStatus: () => true,
+  });
+  if (result.status >= 400)
+    throw new APIException(
+      EX.API_FILE_URL_INVALID,
+      `File ${fileUrl} is not valid: [${result.status}] ${result.statusText}`
+    );
+  // 检查文件大小
+  if (result.headers && result.headers["content-length"]) {
+    const fileSize = parseInt(result.headers["content-length"], 10);
+    if (fileSize > FILE_MAX_SIZE)
+      throw new APIException(
+        EX.API_FILE_EXECEEDS_SIZE,
+        `File ${fileUrl} is not valid`
+      );
+  }
+}
+
+/**
+ * 上传文件
+ *
+ * @param fileUrl 文件URL
+ * @param refreshToken 用于刷新access_token的refresh_token
+ */
+async function uploadFile(fileUrl: string, refreshToken: string) {
+  // 预检查远程文件URL可用性
+  await checkFileUrl(fileUrl);
+
+  let filename, fileData: Buffer, mimeType;
+  // 如果是BASE64数据则直接转换为Buffer
+  if (util.isBASE64Data(fileUrl)) {
+    mimeType = util.extractBASE64DataFormat(fileUrl);
+    const ext = mime.getExtension(mimeType);
+    filename = `${util.uuid()}.${ext}`;
+    fileData = Buffer.from(util.removeBASE64DataHeader(fileUrl), "base64");
+  }
+  // 下载文件到内存，如果您的服务器内存很小，建议考虑改造为流直传到下一个接口上，避免停留占用内存
+  else {
+    filename = path.basename(fileUrl);
+    const queryIndex = filename.indexOf("?");
+    if (queryIndex != -1) filename = filename.substring(0, queryIndex);
+    ({ data: fileData } = await axios.get(fileUrl, {
+      responseType: "arraybuffer",
+      // 100M限制
+      maxContentLength: FILE_MAX_SIZE,
+      headers: {
+        Cookie:
+          "INGRESSCOOKIE=1711735363.098.26095.391795|cdfd1cd25bff0dd747986e2907e40a4e; Oasis-Webid=9b4315f03ff3e2abdf7a0b6eb1d41b293ac6fa12; Oasis-Token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY3RpdmF0ZWQiOmZhbHNlLCJhZ2UiOjgsImJhbmVkIjpmYWxzZSwiZXhwIjoxNzExOTAzODkxLCJtb2RlIjoyLCJvYXNpc19pZCI6ODM1NDA2NzE4ODA5NTM4NTYsInZlcnNpb24iOjF9.KrkngKk8drUVfgRBnEE3A07JKjmqgHL3c7J5PlMxKWw...eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcHBfaWQiOjEwMzAwLCJkZXZpY2VfaWQiOiI5YjQzMTVmMDNmZjNlMmFiZGY3YTBiNmViMWQ0MWIyOTNhYzZmYTEyIiwiZXhwIjoxNzEzMDMxMzkxLCJvYXNpc19pZCI6ODM1NDA2NzE4ODA5NTM4NTYsInZlcnNpb24iOjF9.HRfkpUOFNGO0Jm6wvijGg9PzxD9d9-j4gXh4eqOkAKk",
+        Referer: "https://platform.stepfun.com/",
+        UserAgent:
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+      },
+      // 60秒超时
+      timeout: 60000,
+    }));
+  }
+
+  // 获取文件的MIME类型
+  mimeType = mimeType || mime.getType(filename);
+  // 上传文件到目标OSS
+  const { deviceId, token } = await acquireToken(refreshToken);
+  let result = await axios.request({
+    method: "PUT",
+    url: `https://stepchat.cn/api/storage?file_name=${filename}`,
+    data: fileData,
+    // 100M限制
+    maxBodyLength: FILE_MAX_SIZE,
+    // 60秒超时
+    timeout: 60000,
+    headers: {
+      Cookie: generateCookie(deviceId, token),
+      "Oasis-Webid": deviceId,
+      Referer: "https://stepchat.cn/chats/new",
+      "Stepchat-Meta-Width": "undefined",
+      "Stepchat-Meta-Height": "undefined",
+      "Stepchat-Meta-Size": fileData.byteLength,
+      ...FAKE_HEADERS,
+    },
+    validateStatus: () => true,
+  });
+  const { id: fileId } = checkResult(result, refreshToken);
+
+  let fileStatus;
+  const startTime = util.unixTimestamp();
+  while (fileStatus != 1) {
+    // 获取文件上传结果
+    result = await axios.post(
+      "https://stepchat.cn/api/proto.file.v1.FileService/GetFileStatus",
+      {
+        id: fileId,
+      },
+      {
+        headers: {
+          Cookie: generateCookie(deviceId, token),
+          "Oasis-Webid": deviceId,
+          Referer: "https://stepchat.cn/chats/new",
+          ...FAKE_HEADERS,
+        },
+        timeout: 15000,
+      }
+    );
+    ({ fileStatus } = checkResult(result, refreshToken));
+    // 上传失败处理
+    if ([12, 22, 59, 404].includes(fileStatus))
+      throw new APIException(EX.API_FILE_UPLOAD_FAILED);
+    // 上传超时处理
+    if (util.unixTimestamp() - startTime > 60)
+      throw new APIException(EX.API_FILE_UPLOAD_TIMEOUT);
+  }
+
+  return {
+    attachmentType: mimeType,
+    attachmentId: fileId,
+    name: filename,
+    width: "undefined",
+    height: "undefined",
+    size: `${fileData.byteLength}`,
+  };
 }
 
 /**

@@ -239,11 +239,129 @@ Authorization: Bearer [refresh_token]
 
 ### 文档解读
 
-接口开发中...
+提供一个可访问的文件URL或者BASE64_URL进行解析。
+
+**POST /v1/chat/completions**
+
+header 需要设置 Authorization 头部：
+
+```
+Authorization: Bearer [refresh_token]
+```
+
+请求数据：
+```json
+{
+    // 模型名称随意填写，如果不希望输出检索过程模型名称请包含silent_search
+    "model": "kimi",
+    "messages": [
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "file",
+                    "file_url": {
+                        "url": "https://mj101-1317487292.cos.ap-shanghai.myqcloud.com/ai/test.pdf"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": "文档里说了什么？"
+                }
+            ]
+        }
+    ]
+}
+```
+
+响应数据：
+```json
+{
+    "id": "85774360661086208",
+    "model": "step",
+    "object": "chat.completion",
+    "choices": [
+        {
+            "index": 0,
+            "message": {
+                "role": "assistant",
+                "content": "这是一个关于爱情魔法的文档。它包含了四个部分：\n\n1. **PMG 4.1390 – 1495**：这是一个使用面包和咒语来吸引心仪女性的仪式。仪式中需要将面包分成七个小块，并在特定地点进行咒语的念诵和投掷。\n2. **PMG 4.1342 – 57**：这是一个召唤恶魔来使一个名叫Tereous的女性受到折磨，直到她与一个名叫Didymos的人相爱并结合的咒语。\n3. **PGM 4.1265 – 74**：这是关于如何赢得一个美丽的女人的咒语。它涉及到连续三天保持纯洁，向女神阿佛洛狄特（Aphrodite）供奉乳香，并在心中默念她的神秘名字。\n4. **PGM 4.1496 – 1**：这是一个使用没药来吸引一个特定女性的咒语。这个咒语需要在煤上焚烧没药的同时念诵，目的是让这个女性心中只想着施咒者，并最终与施咒者相爱。"
+            },
+            "finish_reason": "stop"
+        }
+    ],
+    "usage": {
+        "prompt_tokens": 1,
+        "completion_tokens": 1,
+        "total_tokens": 2
+    },
+    "created": 1711903489
+}
+```
 
 ### 图像解析
 
-接口开发中...
+提供一个可访问的图像URL或者BASE64_URL进行解析。
+
+此格式兼容 [gpt-4-vision-preview](https://platform.openai.com/docs/guides/vision) API格式，您也可以用这个格式传送文档进行解析。
+
+**POST /v1/chat/completions**
+
+header 需要设置 Authorization 头部：
+
+```
+Authorization: Bearer [refresh_token]
+```
+
+请求数据：
+```json
+{
+    // 模型名称随意填写
+    "model": "step",
+    "messages": [
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": "https://k.sinaimg.cn/n/sinakd20111/106/w1024h682/20240327/babd-2ce15fdcfbd6ddbdc5ab588c29b3d3d9.jpg/w700d1q75cms.jpg"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": "图像描述了什么？"
+                }
+            ]
+        }
+    ]
+}
+```
+
+响应数据：
+```json
+{
+    "id": "85773574417829888",
+    "model": "step",
+    "object": "chat.completion",
+    "choices": [
+        {
+        "index": 0,
+        "message": {
+            "role": "assistant",
+            "content": "这张图片展示了一个活动现场，似乎是某种新产品或技术的发布会。图片中央有一个大屏幕，上面写着“创新技术及产品首发”，屏幕上还展示了一些公司的标志或名称，如“RWKV”、“财跃星辰”、“阶跃星辰”、“商汤”和“零方科技”。在屏幕下方的舞台上，有几位穿着正装的人士正在进行互动，可能是在进行产品发布或演示。整个场景给人一种正式且科技感十足的印象。"
+        },
+        "finish_reason": "stop"
+        }
+    ],
+    "usage": {
+        "prompt_tokens": 1,
+        "completion_tokens": 1,
+        "total_tokens": 2
+    },
+    "created": 1711903302
+}
+```
 
 ## 注意事项
 
