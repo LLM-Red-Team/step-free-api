@@ -5,7 +5,7 @@
 ![](https://img.shields.io/github/forks/llm-red-team/step-free-api.svg)
 ![](https://img.shields.io/docker/pulls/vinlic/step-free-api.svg)
 
-支持高速流式输出、支持多轮对话、支持联网搜索、支持长文档解读、支持图像解析（正在开发），零配置部署，多路token支持，自动清理会话痕迹。
+支持高速流式输出、支持多轮对话、支持联网搜索、支持长文档解读、支持图像解析，零配置部署，多路token支持，自动清理会话痕迹。
 
 与ChatGPT接口完全兼容。
 
@@ -70,7 +70,7 @@ https://udify.app/chat/RGqDVPHspgQgGSgf
 
 ### 图像解析
 
-功能开发中...
+![图像解析](./doc/example-6.png)
 
 ## 接入准备
 
