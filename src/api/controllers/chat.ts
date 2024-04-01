@@ -479,12 +479,21 @@ async function receiveStream(model: string, convId: string, stream: any) {
           : "";
       }
     };
+    let temp = Buffer.from([]);
     // 将流数据传到转换器，每个buffer去除数据头5字节
     stream.on("data", (buffer: Buffer) => {
       const parts: Buffer[] = [];
       let length = 0;
       let sizeLength = 0;
       let i = 0;
+      if(buffer[buffer.length - 1] != 125) {
+        temp = Buffer.concat([temp, buffer]);
+        return;
+      }
+      else if(temp.length > 0) {
+        buffer = Buffer.concat([temp, buffer]);
+        temp = Buffer.from([]);
+      }
       for (i = 0; i < buffer.byteLength; i++) {
         const byte = buffer.readUInt8(i);
         if (byte == 0x00 || byte == 0x02) {
