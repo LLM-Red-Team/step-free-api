@@ -210,8 +210,8 @@ async function createCompletion(
     const refFileUrls = extractRefFileUrls(messages);
     const refs = refFileUrls.length
       ? await Promise.all(
-          refFileUrls.map((fileUrl) => uploadFile(fileUrl, refreshToken))
-        )
+        refFileUrls.map((fileUrl) => uploadFile(fileUrl, refreshToken))
+      )
       : [];
 
     // 创建会话
@@ -290,8 +290,8 @@ async function createCompletionStream(
     const refFileUrls = extractRefFileUrls(messages);
     const refs = refFileUrls.length
       ? await Promise.all(
-          refFileUrls.map((fileUrl) => uploadFile(fileUrl, refreshToken))
-        )
+        refFileUrls.map((fileUrl) => uploadFile(fileUrl, refreshToken))
+      )
       : [];
 
     // 创建会话
@@ -713,11 +713,8 @@ async function checkFileUrl(fileUrl: string) {
   const result = await axios.head(fileUrl, {
     timeout: 15000,
     headers: {
-      Cookie:
-        "INGRESSCOOKIE=1711735363.098.26095.391795|cdfd1cd25bff0dd747986e2907e40a4e; Oasis-Webid=9b4315f03ff3e2abdf7a0b6eb1d41b293ac6fa12; Oasis-Token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY3RpdmF0ZWQiOmZhbHNlLCJhZ2UiOjgsImJhbmVkIjpmYWxzZSwiZXhwIjoxNzExOTAzODkxLCJtb2RlIjoyLCJvYXNpc19pZCI6ODM1NDA2NzE4ODA5NTM4NTYsInZlcnNpb24iOjF9.KrkngKk8drUVfgRBnEE3A07JKjmqgHL3c7J5PlMxKWw...eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcHBfaWQiOjEwMzAwLCJkZXZpY2VfaWQiOiI5YjQzMTVmMDNmZjNlMmFiZGY3YTBiNmViMWQ0MWIyOTNhYzZmYTEyIiwiZXhwIjoxNzEzMDMxMzkxLCJvYXNpc19pZCI6ODM1NDA2NzE4ODA5NTM4NTYsInZlcnNpb24iOjF9.HRfkpUOFNGO0Jm6wvijGg9PzxD9d9-j4gXh4eqOkAKk",
-      Referer: "https://platform.stepfun.com/",
       UserAgent:
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
     },
     validateStatus: () => true,
   });
@@ -765,11 +762,8 @@ async function uploadFile(fileUrl: string, refreshToken: string) {
       // 100M限制
       maxContentLength: FILE_MAX_SIZE,
       headers: {
-        Cookie:
-          "INGRESSCOOKIE=1711735363.098.26095.391795|cdfd1cd25bff0dd747986e2907e40a4e; Oasis-Webid=9b4315f03ff3e2abdf7a0b6eb1d41b293ac6fa12; Oasis-Token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY3RpdmF0ZWQiOmZhbHNlLCJhZ2UiOjgsImJhbmVkIjpmYWxzZSwiZXhwIjoxNzExOTAzODkxLCJtb2RlIjoyLCJvYXNpc19pZCI6ODM1NDA2NzE4ODA5NTM4NTYsInZlcnNpb24iOjF9.KrkngKk8drUVfgRBnEE3A07JKjmqgHL3c7J5PlMxKWw...eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcHBfaWQiOjEwMzAwLCJkZXZpY2VfaWQiOiI5YjQzMTVmMDNmZjNlMmFiZGY3YTBiNmViMWQ0MWIyOTNhYzZmYTEyIiwiZXhwIjoxNzEzMDMxMzkxLCJvYXNpc19pZCI6ODM1NDA2NzE4ODA5NTM4NTYsInZlcnNpb24iOjF9.HRfkpUOFNGO0Jm6wvijGg9PzxD9d9-j4gXh4eqOkAKk",
-        Referer: "https://platform.stepfun.com/",
         UserAgent:
-          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
       },
       // 60秒超时
       timeout: 60000,
@@ -789,21 +783,22 @@ async function uploadFile(fileUrl: string, refreshToken: string) {
     // 60秒超时
     timeout: 60000,
     headers: {
+      'Content-Type': mimeType,
       Cookie: generateCookie(deviceId, token),
       "Oasis-Webid": deviceId,
       Referer: "https://stepchat.cn/chats/new",
       "Stepchat-Meta-Width": "undefined",
       "Stepchat-Meta-Height": "undefined",
-      "Stepchat-Meta-Size": fileData.byteLength,
+      "Stepchat-Meta-Size": `${fileData.byteLength}`,
       ...FAKE_HEADERS,
     },
     validateStatus: () => true,
   });
   const { id: fileId } = checkResult(result, refreshToken);
 
-  let fileStatus;
+  let fileStatus, needFurtherCall = true;
   const startTime = util.unixTimestamp();
-  while (fileStatus != 1) {
+  while (needFurtherCall) {
     // 获取文件上传结果
     result = await axios.post(
       "https://stepchat.cn/api/proto.file.v1.FileService/GetFileStatus",
@@ -820,7 +815,7 @@ async function uploadFile(fileUrl: string, refreshToken: string) {
         timeout: 15000,
       }
     );
-    ({ fileStatus } = checkResult(result, refreshToken));
+    ({ fileStatus, needFurtherCall } = checkResult(result, refreshToken));
     // 上传失败处理
     if ([12, 22, 59, 404].includes(fileStatus))
       throw new APIException(EX.API_FILE_UPLOAD_FAILED);
@@ -828,6 +823,7 @@ async function uploadFile(fileUrl: string, refreshToken: string) {
     if (util.unixTimestamp() - startTime > 60)
       throw new APIException(EX.API_FILE_UPLOAD_TIMEOUT);
   }
+  await new Promise(resolve => setTimeout(resolve, 5000));
 
   return {
     attachmentType: mimeType,
