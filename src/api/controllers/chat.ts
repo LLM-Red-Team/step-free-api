@@ -408,18 +408,18 @@ function messagesPrepare(convId: string, messages: any[], refs: any[]) {
     && latestMessage.content.some(v => (typeof v === 'object' && ['file', 'image_url'].includes(v['type'])));
   if (hasFileOrImage) {
     let newFileMessage = {
-      "content": "关注用户最新发送文件和消息结尾",
+      "content": "以上为历史消息，关注以下用户发送的文件和消息",
       "role": "system"
     };
     validMessages.splice(validMessages.length - 1, 0, newFileMessage);
-    logger.info("检查注入文件消息");
+    logger.info("注入提升尾部文件注意力system prompt");
   } else {
     let newTextMessage = {
-      "content": "关注用户消息的结尾",
+      "content": "以上为历史消息，关注以下用户消息",
       "role": "system"
     };
     validMessages.splice(validMessages.length - 1, 0, newTextMessage);
-    logger.info("检查注入文本消息");
+    logger.info("注入提升尾部消息注意力system prompt");
   }
 
   const content = validMessages.reduce((content, message) => {
@@ -430,7 +430,9 @@ function messagesPrepare(convId: string, messages: any[], refs: any[]) {
       }, content);
     }
     return (content += `${message.role || "user"}:${message.content}\n`);
-  }, "");
+  }, "") + 'assistant:';
+
+  logger.info("\n对话合并：\n" + content);
   const json = JSON.stringify({
     chatId: convId,
     messageInfo: {
