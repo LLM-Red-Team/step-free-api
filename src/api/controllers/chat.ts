@@ -372,6 +372,7 @@ function extractRefFileUrls(messages: any[]) {
         urls.push(v['image_url']['url']);
     });
   }
+  logger.info("本次请求上传：" + urls.length + "个文件");
   return urls;
 }
 
@@ -420,7 +421,7 @@ function messagesPrepare(convId: string, messages: any[], refs: any[]) {
     validMessages.splice(validMessages.length - 1, 0, newTextMessage);
     logger.info("检查注入文本消息");
   }
-  
+
   const content = validMessages.reduce((content, message) => {
     if (_.isArray(message.content)) {
       return message.content.reduce((_content, v) => {
