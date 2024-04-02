@@ -386,12 +386,41 @@ function extractRefFileUrls(messages: any[]) {
  * @param messages 参考gpt系列消息格式，多轮对话请完整提供上下文
  */
 function messagesPrepare(convId: string, messages: any[], refs: any[]) {
+  // 只保留最新消息以及不包含"type": "image_url"或"type": "file"的消息
   let validMessages = messages.filter((message, index) => {
     if (index === messages.length - 1) return true;
     if (!Array.isArray(message.content)) return true;
     // 不含"type": "image_url"或"type": "file"的消息保留
     return !message.content.some(v => (typeof v === 'object' && ['file', 'image_url'].includes(v['type'])));
   });
+
+  // 检查最新消息是否含有"type": "image_url"或"type": "file",如果有则注入消息
+  let latestMessage = validMessages[validMessages.length - 1];
+  let hasFileOrImage = Array.isArray(latestMessage.content)
+    && latestMessage.content.some(v => (typeof v === 'object' && ['file', 'image_url'].includes(v['type'])));
+  if (hasFileOrImage) {
+    // 对 latestMessage.content 进行过滤，只保留不含base64的内容
+    latestMessage.content = latestMessage.content.filter(v => {
+      if (typeof v === 'object' && ['file', 'image_url'].includes(v['type'])) {
+        return !util.isBASE64Data(v['image_url']['url']);
+      }
+      return true;
+    });
+    let newFileMessage = {
+      "content": "关注用户最新发送文件和消息结尾",
+      "role": "system"
+    };
+    validMessages.splice(validMessages.length - 1, 0, newFileMessage);
+    logger.info("检查注入文件消息");
+  } else {
+    let newTextMessage = {
+      "content": "关注用户消息的结尾",
+      "role": "system"
+    };
+    validMessages.splice(validMessages.length - 1, 0, newTextMessage);
+    logger.info("检查注入文本消息");
+  }
+  
   const content = validMessages.reduce((content, message) => {
     if (_.isArray(message.content)) {
       return message.content.reduce((_content, v) => {
@@ -486,11 +515,11 @@ async function receiveStream(model: string, convId: string, stream: any) {
       let length = 0;
       let sizeLength = 0;
       let i = 0;
-      if(buffer[buffer.length - 1] != 125) {
+      if (buffer[buffer.length - 1] != 125) {
         temp = Buffer.concat([temp, buffer]);
         return;
       }
-      else if(temp.length > 0) {
+      else if (temp.length > 0) {
         buffer = Buffer.concat([temp, buffer]);
         temp = Buffer.from([]);
       }
