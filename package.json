@@ -1,6 +1,6 @@
 {
   "name": "step-free-api",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "description": "Stepchat Free API Server",
   "type": "module",
   "main": "dist/index.js",
