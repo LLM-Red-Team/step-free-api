@@ -411,13 +411,13 @@ function messagesPrepare(convId: string, messages: any[], refs: any[]) {
     if (_.isArray(message.content)) {
       return message.content.reduce((_content, v) => {
         if (!_.isObject(v) || v["type"] != "text") return _content;
-        return _content + `\n${message.role || "user"}:${v["text"] || ""}`;
+        return _content + `${message.role || "user"}:${v["text"] || ""}\n`;
       }, content);
     }
-    return (content += `\n${message.role || "user"}:${message.content}`);
+    return (content += `${message.role || "user"}:${message.content}\n`);
   }, "") + 'assistant:';
 
-  logger.info("\n对话合并：" + content);
+  logger.info("\n对话合并：\n" + content);
   const json = JSON.stringify({
     chatId: convId,
     messageInfo: {
