@@ -387,23 +387,8 @@ function extractRefFileUrls(messages: any[]) {
  * @param messages 参考gpt系列消息格式，多轮对话请完整提供上下文
  */
 function messagesPrepare(convId: string, messages: any[], refs: any[]) {
-  // 先剔除所有的 base64 数据
-  let validMessages = messages.map((message) => {
-    if (Array.isArray(message.content)) {
-      message.content = message.content.filter(v => {
-        if (typeof v === 'object' && ['file', 'image_url'].includes(v['type'])) {
-          // 如果内容是 base64 数据，就剔除
-          return !util.isBASE64Data(v['url']);
-        }
-        // 如果不是 base64 数据，就保留
-        return true;
-      });
-    }
-    return message;
-  });
-
   // 检查最新消息是否含有"type": "image_url"或"type": "file",如果有则注入消息
-  let latestMessage = validMessages[validMessages.length - 1];
+  let latestMessage = messages[messages.length - 1];
   let hasFileOrImage = Array.isArray(latestMessage.content)
     && latestMessage.content.some(v => (typeof v === 'object' && ['file', 'image_url'].includes(v['type'])));
   if (hasFileOrImage) {
@@ -411,28 +396,28 @@ function messagesPrepare(convId: string, messages: any[], refs: any[]) {
       "content": "以上为历史消息，关注以下用户发送的文件和消息",
       "role": "system"
     };
-    validMessages.splice(validMessages.length - 1, 0, newFileMessage);
+    messages.splice(messages.length - 1, 0, newFileMessage);
     logger.info("注入提升尾部文件注意力system prompt");
   } else {
     let newTextMessage = {
       "content": "以上为历史消息，关注以下用户消息",
       "role": "system"
     };
-    validMessages.splice(validMessages.length - 1, 0, newTextMessage);
+    messages.splice(messages.length - 1, 0, newTextMessage);
     logger.info("注入提升尾部消息注意力system prompt");
   }
 
-  const content = validMessages.reduce((content, message) => {
+  const content = messages.reduce((content, message) => {
     if (_.isArray(message.content)) {
       return message.content.reduce((_content, v) => {
         if (!_.isObject(v) || v["type"] != "text") return _content;
-        return _content + ('user:' + v['text'] || "") + "\n";
+        return _content + `\n${message.role || "user"}:${v["text"] || ""}`;
       }, content);
     }
-    return (content += `${message.role || "user"}:${message.content}\n`);
+    return (content += `\n${message.role || "user"}:${message.content}`);
   }, "") + 'assistant:';
 
-  logger.info("\n对话合并：\n" + content);
+  logger.info("\n对话合并：" + content);
   const json = JSON.stringify({
     chatId: convId,
     messageInfo: {
