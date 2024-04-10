@@ -838,9 +838,39 @@ function tokenSplit(authorization: string) {
   return authorization.replace("Bearer ", "").split(",");
 }
 
+/**
+ * 获取Token存活状态
+ */
+async function getTokenLiveStatus(refreshToken: string) {
+  const result = await axios.post(
+    "https://stepchat.cn/passport/proto.api.passport.v1.PassportService/RegisterDevice",
+    {},
+    {
+      headers: {
+        Cookie: `Oasis-Token=${refreshToken}`,
+        Referer: "https://stepchat.cn/chats/new",
+        ...FAKE_HEADERS,
+      },
+      timeout: 15000,
+      validateStatus: () => true,
+    }
+  );
+  try {
+    const {
+      accessToken: { raw: accessTokenRaw },
+      refreshToken: { raw: refreshTokenRaw }
+    } = checkResult(result, refreshToken);
+    return !!(accessTokenRaw && refreshTokenRaw)
+  }
+  catch(err) {
+    return false;
+  }
+}
+
 export default {
   createConversation,
   createCompletion,
   createCompletionStream,
+  getTokenLiveStatus,
   tokenSplit,
 };

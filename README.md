@@ -33,6 +33,7 @@ ZhipuAI (智谱清言) 接口转API [glm-free-api](https://github.com/LLM-Red-Te
   * [对话补全](#对话补全)
   * [文档解读](#文档解读)
   * [图像解析](#图像解析)
+  * [refresh_token存活检测](#refresh_token存活检测)
 * [注意事项](#注意事项)
   * [Nginx反代优化](#Nginx反代优化)
 
@@ -52,23 +53,23 @@ https://udify.app/chat/RGqDVPHspgQgGSgf
 
 ## 效果示例
 
-### 验明正身
+### 验明正身Demo
 
 ![验明正身](./doc/example-1.png)
 
-### 多轮对话
+### 多轮对话Demo
 
 ![多轮对话](./doc/example-2.png)
 
-### 联网搜索
+### 联网搜索Demo
 
 ![联网搜索](./doc/example-3.png)
 
-### 长文档解读
+### 长文档解读Demo
 
 ![长文档解读](./doc/example-4.png)
 
-### 图像解析
+### 图像解析Demo
 
 ![图像解析](./doc/example-6.png)
 
@@ -360,6 +361,26 @@ Authorization: Bearer [refresh_token]
         "total_tokens": 2
     },
     "created": 1711903302
+}
+```
+
+### refresh_token存活检测
+
+检测refresh_token是否存活，如果存活live未true，否则为false，请不要频繁（小于10分钟）调用此接口。
+
+**POST /token/check**
+
+请求数据：
+```json
+{
+    "token": "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+响应数据：
+```json
+{
+    "live": true
 }
 ```
 
