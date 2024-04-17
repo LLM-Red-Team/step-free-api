@@ -55,10 +55,6 @@ ZhipuAI (智谱清言) 接口转API [glm-free-api](https://github.com/LLM-Red-Te
 
 https://udify.app/chat/RGqDVPHspgQgGSgf
 
-## 抖M专属体验（心脏承受能力弱者禁入）
-
-https://udify.app/chat/Jm0nf2ONC9iOf81B
-
 ## 效果示例
 
 ### 验明正身Demo
