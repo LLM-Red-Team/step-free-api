@@ -1,6 +1,6 @@
 # 跃问StepChat Free 服务
 
-[![](https://img.shields.io/github/license/llm-red-team/kimi-free-api.svg)](LICENSE)
+[![](https://img.shields.io/github/license/llm-red-team/step-free-api.svg)](LICENSE)
 ![](https://img.shields.io/github/stars/llm-red-team/step-free-api.svg)
 ![](https://img.shields.io/github/forks/llm-red-team/step-free-api.svg)
 ![](https://img.shields.io/docker/pulls/vinlic/step-free-api.svg)
