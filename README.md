@@ -1,6 +1,6 @@
 # 跃问StepChat Free 服务
 
-![](https://img.shields.io/github/license/llm-red-team/step-free-api.svg)
+[![](https://img.shields.io/github/license/llm-red-team/kimi-free-api.svg)](LICENSE)
 ![](https://img.shields.io/github/stars/llm-red-team/step-free-api.svg)
 ![](https://img.shields.io/github/forks/llm-red-team/step-free-api.svg)
 ![](https://img.shields.io/docker/pulls/vinlic/step-free-api.svg)
@@ -25,7 +25,7 @@ ZhipuAI (智谱清言) 接口转API [glm-free-api](https://github.com/LLM-Red-Te
 
 ## 目录
 
-* [声明](#声明)
+* [免责声明](#免责声明)
 * [在线体验](#在线体验)
 * [效果示例](#效果示例)
 * [接入准备](#接入准备)
@@ -42,6 +42,8 @@ ZhipuAI (智谱清言) 接口转API [glm-free-api](https://github.com/LLM-Red-Te
   * [refresh_token存活检测](#refresh_token存活检测)
 * [注意事项](#注意事项)
   * [Nginx反代优化](#Nginx反代优化)
+  * [Token统计](#Token统计)
+* [Star History](#star-history)
 
 ## 免责声明
 
