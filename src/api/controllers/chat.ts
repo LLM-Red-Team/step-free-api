@@ -483,7 +483,7 @@ async function receiveStream(model: string, convId: string, stream: any) {
         ) {
           refContent = result.pipelineEvent.eventSearch.results.reduce(
             (str, v) => {
-              return (str += `${v.title}(${v.url})\n`);
+              return (str += `${v.title} - ${v.url}\n`);
             },
             ""
           );
@@ -491,6 +491,7 @@ async function receiveStream(model: string, convId: string, stream: any) {
       } else if (result.textEvent && result.textEvent.text)
         data.choices[0].message.content += result.textEvent.text;
       else if (result.doneEvent) {
+        data.choices[0].message.content = data.choices[0].message.content.replace(/<web_[0-9a-zA-Z]+>/g, '');
         data.choices[0].message.content += refContent
           ? `\n\n搜索结果来自：\n${refContent.replace(/\n$/, "")}`
           : "";
@@ -586,7 +587,7 @@ function createTransStream(
       ) {
         const refContent = result.pipelineEvent.eventSearch.results.reduce(
           (str, v) => {
-            return (str += `检索 ${v.title}(${v.url}) ...\n`);
+            return (str += `检索 ${v.title} - ${v.url} ...\n`);
           },
           ""
         );
