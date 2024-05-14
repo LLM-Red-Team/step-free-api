@@ -491,7 +491,7 @@ async function receiveStream(model: string, convId: string, stream: any) {
       } else if (result.textEvent && result.textEvent.text)
         data.choices[0].message.content += result.textEvent.text;
       else if (result.doneEvent) {
-        data.choices[0].message.content = data.choices[0].message.content.replace(/<web_[0-9a-zA-Z]+>/g, '');
+        data.choices[0].message.content = data.choices[0].message.content.replace(/<(web|url|unknown)_[0-9a-zA-Z]+>/g, '');
         data.choices[0].message.content += refContent
           ? `\n\n搜索结果来自：\n${refContent.replace(/\n$/, "")}`
           : "";
