@@ -92,7 +92,7 @@ https://udify.app/chat/RGqDVPHspgQgGSgf
 
 ## 接入准备
 
-从 [stepchat.cn](https://stepchat.cn) 获取Oasis-Token
+从 [yuewen.cn](https://yuewen.cn) 获取Oasis-Token
 
 进入StepChat随便发起一个对话，然后F12打开开发者工具。
 
