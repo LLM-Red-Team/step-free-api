@@ -26,7 +26,6 @@ const FAKE_HEADERS = {
   "Connect-Protocol-Version": "1",
   "Oasis-Appid": "10200",
   "Oasis-Platform": "web",
-  "Oasis-Webid": "265bcc81a05c2032a11a6fc6ec3e372c380eb9d2",
   "Sec-Ch-Ua":
     '"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"',
   "Sec-Ch-Ua-Mobile": "?0",
