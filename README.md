@@ -1,4 +1,4 @@
-# 跃问StepChat Free 服务
+# 跃问YueWen Free 服务
 
 [![](https://img.shields.io/github/license/llm-red-team/step-free-api.svg)](LICENSE)
 ![](https://img.shields.io/github/stars/llm-red-team/step-free-api.svg)
