@@ -22,11 +22,11 @@ const FAKE_HEADERS = {
   Accept: "*/*",
   "Accept-Encoding": "gzip, deflate, br, zstd",
   "Accept-Language": "zh-CN,zh;q=0.9",
-  Origin: "https://stepchat.cn",
+  Origin: "https://yuewen.cn",
   "Connect-Protocol-Version": "1",
   "Oasis-Appid": "10200",
   "Oasis-Platform": "web",
-  "Oasis-Webid": util.uuid(),
+  "Oasis-Webid": "265bcc81a05c2032a11a6fc6ec3e372c380eb9d2",
   "Sec-Ch-Ua":
     '"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"',
   "Sec-Ch-Ua-Mobile": "?0",
@@ -59,14 +59,16 @@ async function requestToken(refreshToken: string) {
   accessTokenRequestQueueMap[refreshToken] = [];
   logger.info(`Refresh token: ${refreshToken}`);
   const result = await (async () => {
+    const [deviceId, token] = refreshToken.split('@');
     const result = await axios.post(
-      "https://stepchat.cn/passport/proto.api.passport.v1.PassportService/RegisterDevice",
+      "https://yuewen.cn/passport/proto.api.passport.v1.PassportService/RegisterDevice",
       {},
       {
         headers: {
-          Cookie: `Oasis-Token=${refreshToken}`,
-          Referer: "https://stepchat.cn/chats/new",
+          Cookie: `Oasis-Token=${token}`,
+          Referer: "https://yuewen.cn/chats/new",
           ...FAKE_HEADERS,
+          "Oasis-Webid": deviceId
         },
         timeout: 15000,
         validateStatus: () => true,
@@ -74,8 +76,7 @@ async function requestToken(refreshToken: string) {
     );
     const {
       accessToken: { raw: accessTokenRaw },
-      refreshToken: { raw: refreshTokenRaw },
-      device: { deviceID: deviceId },
+      refreshToken: { raw: refreshTokenRaw }
     } = checkResult(result, refreshToken);
     return {
       deviceId,
@@ -140,7 +141,7 @@ async function acquireToken(refreshToken: string) {
 async function createConversation(name: string, refreshToken: string) {
   const { deviceId, token } = await acquireToken(refreshToken);
   const result = await axios.post(
-    "https://stepchat.cn/api/proto.chat.v1.ChatService/CreateChat",
+    "https://yuewen.cn/api/proto.chat.v1.ChatService/CreateChat",
     {
       chatName: name,
     },
@@ -148,7 +149,7 @@ async function createConversation(name: string, refreshToken: string) {
       headers: {
         Cookie: generateCookie(deviceId, token),
         "Oasis-Webid": deviceId,
-        Referer: "https://stepchat.cn/chats/new",
+        Referer: "https://yuewen.cn/chats/new",
         ...FAKE_HEADERS,
       },
       timeout: 15000,
@@ -169,7 +170,7 @@ async function createConversation(name: string, refreshToken: string) {
 async function removeConversation(convId: string, refreshToken: string) {
   const { deviceId, token } = await acquireToken(refreshToken);
   const result = await axios.post(
-    `https://stepchat.cn/api/proto.chat.v1.ChatService/DelChat`,
+    `https://yuewen.cn/api/proto.chat.v1.ChatService/DelChat`,
     {
       chatIds: [convId],
     },
@@ -177,7 +178,7 @@ async function removeConversation(convId: string, refreshToken: string) {
       headers: {
         Cookie: generateCookie(deviceId, token),
         "Oasis-Webid": deviceId,
-        Referer: `https://stepchat.cn/chats/${convId}`,
+        Referer: `https://yuewen.cn/chats/${convId}`,
         ...FAKE_HEADERS,
       },
       timeout: 15000,
@@ -220,14 +221,14 @@ async function createCompletion(
     // 请求流
     const { deviceId, token } = await acquireToken(refreshToken);
     const result = await axios.post(
-      `https://stepchat.cn/api/proto.chat.v1.ChatMessageService/SendMessageStream`,
+      `https://yuewen.cn/api/proto.chat.v1.ChatMessageService/SendMessageStream`,
       messagesPrepare(convId, messages, refs),
       {
         headers: {
           "Content-Type": "application/connect+json",
           Cookie: generateCookie(deviceId, token),
           "Oasis-Webid": deviceId,
-          Referer: `https://stepchat.cn/chats/${convId}`,
+          Referer: `https://yuewen.cn/chats/${convId}`,
           ...FAKE_HEADERS,
         },
         // 120秒超时
@@ -300,14 +301,14 @@ async function createCompletionStream(
     // 请求流
     const { deviceId, token } = await acquireToken(refreshToken);
     const result = await axios.post(
-      `https://stepchat.cn/api/proto.chat.v1.ChatMessageService/SendMessageStream`,
+      `https://yuewen.cn/api/proto.chat.v1.ChatMessageService/SendMessageStream`,
       messagesPrepare(convId, messages, refs),
       {
         headers: {
           "Content-Type": "application/connect+json",
           Cookie: generateCookie(deviceId, token),
           "Oasis-Webid": deviceId,
-          Referer: `https://stepchat.cn/chats/${convId}`,
+          Referer: `https://yuewen.cn/chats/${convId}`,
           ...FAKE_HEADERS,
         },
         // 120秒超时
@@ -771,7 +772,7 @@ async function uploadFile(fileUrl: string, refreshToken: string) {
   const { deviceId, token } = await acquireToken(refreshToken);
   let result = await axios.request({
     method: "PUT",
-    url: `https://stepchat.cn/api/storage?file_name=${filename}`,
+    url: `https://yuewen.cn/api/storage?file_name=${filename}`,
     data: fileData,
     // 100M限制
     maxBodyLength: FILE_MAX_SIZE,
@@ -781,7 +782,7 @@ async function uploadFile(fileUrl: string, refreshToken: string) {
       'Content-Type': mimeType,
       Cookie: generateCookie(deviceId, token),
       "Oasis-Webid": deviceId,
-      Referer: "https://stepchat.cn/chats/new",
+      Referer: "https://yuewen.cn/chats/new",
       "Stepchat-Meta-Width": "undefined",
       "Stepchat-Meta-Height": "undefined",
       "Stepchat-Meta-Size": `${fileData.byteLength}`,
@@ -796,7 +797,7 @@ async function uploadFile(fileUrl: string, refreshToken: string) {
   while (needFurtherCall) {
     // 获取文件上传结果
     result = await axios.post(
-      "https://stepchat.cn/api/proto.file.v1.FileService/GetFileStatus",
+      "https://yuewen.cn/api/proto.file.v1.FileService/GetFileStatus",
       {
         id: fileId,
       },
@@ -804,7 +805,7 @@ async function uploadFile(fileUrl: string, refreshToken: string) {
         headers: {
           Cookie: generateCookie(deviceId, token),
           "Oasis-Webid": deviceId,
-          Referer: "https://stepchat.cn/chats/new",
+          Referer: "https://yuewen.cn/chats/new",
           ...FAKE_HEADERS,
         },
         timeout: 15000,
@@ -844,12 +845,12 @@ function tokenSplit(authorization: string) {
  */
 async function getTokenLiveStatus(refreshToken: string) {
   const result = await axios.post(
-    "https://stepchat.cn/passport/proto.api.passport.v1.PassportService/RegisterDevice",
+    "https://yuewen.cn/passport/proto.api.passport.v1.PassportService/RegisterDevice",
     {},
     {
       headers: {
         Cookie: `Oasis-Token=${refreshToken}`,
-        Referer: "https://stepchat.cn/chats/new",
+        Referer: "https://yuewen.cn/chats/new",
         ...FAKE_HEADERS,
       },
       timeout: 15000,

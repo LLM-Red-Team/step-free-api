@@ -94,9 +94,17 @@ https://udify.app/chat/RGqDVPHspgQgGSgf
 
 从 [stepchat.cn](https://stepchat.cn) 获取Oasis-Token
 
-进入StepChat随便发起一个对话，然后F12打开开发者工具，从Application > Cookies中找到`Oasis-Token`的值，这将作为Authorization的Bearer Token值：`Authorization: Bearer TOKEN`
+进入StepChat随便发起一个对话，然后F12打开开发者工具。
+
+1. 从Application > LocalStorage中找到 `deviceId` 的值（去除双引号），如：`267bcc81a01c2032a11a3fc6ec3e372c380eb9d1`
+
+![example7](./doc/example-7.png)
+
+2. 从Application > Cookies中找到 `Oasis-Token` 的值，如：`eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`
 
 ![example5](./doc/example-5.png)
+
+3. 将 `deviceId` 和 `Oasis-Token` 使用 `@` 拼接为Token，这将作为Authorization的Bearer Token值：`Authorization: Bearer 267bcc81a01c2032a11a3fc6ec3e372c380eb9d1@eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`
 
 ### 多账号接入
 
@@ -425,7 +433,7 @@ Authorization: Bearer [refresh_token]
 请求数据：
 ```json
 {
-    "token": "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9..."
+    "token": "267bcc81a01c2032a11a3fc6ec3e372c380eb9d1@eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 }
 ```
 
