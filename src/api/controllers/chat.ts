@@ -58,7 +58,7 @@ async function requestToken(refreshToken: string) {
   accessTokenRequestQueueMap[refreshToken] = [];
   logger.info(`Refresh token: ${refreshToken}`);
   const result = await (async () => {
-    const [deviceId, token] = refreshToken.split('@');
+    const [deviceId, token] = refreshToken.split("@");
     const result = await axios.post(
       "https://yuewen.cn/passport/proto.api.passport.v1.PassportService/RegisterDevice",
       {},
@@ -67,7 +67,7 @@ async function requestToken(refreshToken: string) {
           Cookie: `Oasis-Token=${token}`,
           Referer: "https://yuewen.cn/chats/new",
           ...FAKE_HEADERS,
-          "Oasis-Webid": deviceId
+          "Oasis-Webid": deviceId,
         },
         timeout: 15000,
         validateStatus: () => true,
@@ -75,7 +75,7 @@ async function requestToken(refreshToken: string) {
     );
     const {
       accessToken: { raw: accessTokenRaw },
-      refreshToken: { raw: refreshTokenRaw }
+      refreshToken: { raw: refreshTokenRaw },
     } = checkResult(result, refreshToken);
     return {
       deviceId,
@@ -210,8 +210,8 @@ async function createCompletion(
     const refFileUrls = extractRefFileUrls(messages);
     const refs = refFileUrls.length
       ? await Promise.all(
-        refFileUrls.map((fileUrl) => uploadFile(fileUrl, refreshToken))
-      )
+          refFileUrls.map((fileUrl) => uploadFile(fileUrl, refreshToken))
+        )
       : [];
 
     // 创建会话
@@ -290,8 +290,8 @@ async function createCompletionStream(
     const refFileUrls = extractRefFileUrls(messages);
     const refs = refFileUrls.length
       ? await Promise.all(
-        refFileUrls.map((fileUrl) => uploadFile(fileUrl, refreshToken))
-      )
+          refFileUrls.map((fileUrl) => uploadFile(fileUrl, refreshToken))
+        )
       : [];
 
     // 创建会话
@@ -361,15 +361,22 @@ function extractRefFileUrls(messages: any[]) {
   // 只获取最新的消息
   const lastMessage = messages[messages.length - 1];
   if (_.isArray(lastMessage.content)) {
-    lastMessage.content.forEach(v => {
-      if (!_.isObject(v) || !['file', 'image_url'].includes(v['type']))
-        return;
+    lastMessage.content.forEach((v) => {
+      if (!_.isObject(v) || !["file", "image_url"].includes(v["type"])) return;
       // step-free-api支持格式
-      if (v['type'] == 'file' && _.isObject(v['file_url']) && _.isString(v['file_url']['url']))
-        urls.push(v['file_url']['url']);
+      if (
+        v["type"] == "file" &&
+        _.isObject(v["file_url"]) &&
+        _.isString(v["file_url"]["url"])
+      )
+        urls.push(v["file_url"]["url"]);
       // 兼容gpt-4-vision-preview API格式
-      else if (v['type'] == 'image_url' && _.isObject(v['image_url']) && _.isString(v['image_url']['url']))
-        urls.push(v['image_url']['url']);
+      else if (
+        v["type"] == "image_url" &&
+        _.isObject(v["image_url"]) &&
+        _.isString(v["image_url"]["url"])
+      )
+        urls.push(v["image_url"]["url"]);
     });
   }
   logger.info("本次请求上传：" + urls.length + "个文件");
@@ -389,33 +396,37 @@ function extractRefFileUrls(messages: any[]) {
 function messagesPrepare(convId: string, messages: any[], refs: any[]) {
   // 检查最新消息是否含有"type": "image_url"或"type": "file",如果有则注入消息
   let latestMessage = messages[messages.length - 1];
-  let hasFileOrImage = Array.isArray(latestMessage.content)
-    && latestMessage.content.some(v => (typeof v === 'object' && ['file', 'image_url'].includes(v['type'])));
+  let hasFileOrImage =
+    Array.isArray(latestMessage.content) &&
+    latestMessage.content.some(
+      (v) => typeof v === "object" && ["file", "image_url"].includes(v["type"])
+    );
   if (hasFileOrImage) {
     let newFileMessage = {
-      "content": "以上为历史消息，关注以下用户发送的文件和消息",
-      "role": "system"
+      content: "以上为历史消息，关注以下用户发送的文件和消息",
+      role: "system",
     };
     messages.splice(messages.length - 1, 0, newFileMessage);
     logger.info("注入提升尾部文件注意力system prompt");
   } else {
     let newTextMessage = {
-      "content": "以上为历史消息，关注以下用户消息",
-      "role": "system"
+      content: "以上为历史消息，关注以下用户消息",
+      role: "system",
     };
     messages.splice(messages.length - 1, 0, newTextMessage);
     logger.info("注入提升尾部消息注意力system prompt");
   }
 
-  const content = messages.reduce((content, message) => {
-    if (_.isArray(message.content)) {
-      return message.content.reduce((_content, v) => {
-        if (!_.isObject(v) || v["type"] != "text") return _content;
-        return _content + `${message.role || "user"}:${v["text"] || ""}\n`;
-      }, content);
-    }
-    return (content += `${message.role || "user"}:${message.content}\n`);
-  }, "") + 'assistant:';
+  const content =
+    messages.reduce((content, message) => {
+      if (_.isArray(message.content)) {
+        return message.content.reduce((_content, v) => {
+          if (!_.isObject(v) || v["type"] != "text") return _content;
+          return _content + `${message.role || "user"}:${v["text"] || ""}\n`;
+        }, content);
+      }
+      return (content += `${message.role || "user"}:${message.content}\n`);
+    }, "") + "assistant:";
 
   logger.info("\n对话合并：\n" + content);
   const json = JSON.stringify({
@@ -491,7 +502,11 @@ async function receiveStream(model: string, convId: string, stream: any) {
       } else if (result.textEvent && result.textEvent.text)
         data.choices[0].message.content += result.textEvent.text;
       else if (result.doneEvent) {
-        data.choices[0].message.content = data.choices[0].message.content.replace(/<(web|url|unknown)_[0-9a-zA-Z]+>/g, '');
+        data.choices[0].message.content =
+          data.choices[0].message.content.replace(
+            /<(web|url|unknown)_[0-9a-zA-Z]+>/g,
+            ""
+          );
         data.choices[0].message.content += refContent
           ? `\n\n搜索结果来自：\n${refContent.replace(/\n$/, "")}`
           : "";
@@ -503,15 +518,13 @@ async function receiveStream(model: string, convId: string, stream: any) {
     stream.on("data", (buffer: Buffer) => {
       // 接收数据头
       chunk = Buffer.concat([temp, chunk, buffer]);
-      if(chunk.length < 5)
-        return;
+      if (chunk.length < 5) return;
       // 读取当前数据块大小
       const chunkSize = chunk.readUint32BE(1);
       // 根据当前大小接收完整数据块
       temp = chunk.subarray(chunkSize + 5);
       chunk = chunk.subarray(0, chunkSize + 5);
-      if(chunk.length < chunkSize + 5)
-        return;
+      if (chunk.length < chunkSize + 5) return;
       parser(chunk.subarray(5));
       chunk = Buffer.from([]);
     });
@@ -649,15 +662,13 @@ function createTransStream(
   stream.on("data", (buffer: Buffer) => {
     // 接收数据头
     chunk = Buffer.concat([temp, chunk, buffer]);
-    if(chunk.length < 5)
-      return;
+    if (chunk.length < 5) return;
     // 读取当前数据块大小
     const chunkSize = chunk.readUint32BE(1);
     // 根据当前大小接收完整数据块
     temp = chunk.subarray(chunkSize + 5);
     chunk = chunk.subarray(0, chunkSize + 5);
-    if(chunk.length < chunkSize + 5)
-      return;
+    if (chunk.length < chunkSize + 5) return;
     parser(chunk.subarray(5));
     chunk = Buffer.from([]);
   });
@@ -778,7 +789,7 @@ async function uploadFile(fileUrl: string, refreshToken: string) {
     // 60秒超时
     timeout: 60000,
     headers: {
-      'Content-Type': mimeType,
+      "Content-Type": mimeType,
       Cookie: generateCookie(deviceId, token),
       "Oasis-Webid": deviceId,
       Referer: "https://yuewen.cn/chats/new",
@@ -791,7 +802,8 @@ async function uploadFile(fileUrl: string, refreshToken: string) {
   });
   const { id: fileId } = checkResult(result, refreshToken);
 
-  let fileStatus, needFurtherCall = true;
+  let fileStatus,
+    needFurtherCall = true;
   const startTime = util.unixTimestamp();
   while (needFurtherCall) {
     // 获取文件上传结果
@@ -818,7 +830,7 @@ async function uploadFile(fileUrl: string, refreshToken: string) {
     if (util.unixTimestamp() - startTime > 60)
       throw new APIException(EX.API_FILE_UPLOAD_TIMEOUT);
   }
-  await new Promise(resolve => setTimeout(resolve, 5000));
+  await new Promise((resolve) => setTimeout(resolve, 5000));
 
   return {
     attachmentType: mimeType,
@@ -843,14 +855,16 @@ function tokenSplit(authorization: string) {
  * 获取Token存活状态
  */
 async function getTokenLiveStatus(refreshToken: string) {
+  const [deviceId, token] = refreshToken.split("@");
   const result = await axios.post(
     "https://yuewen.cn/passport/proto.api.passport.v1.PassportService/RegisterDevice",
     {},
     {
       headers: {
-        Cookie: `Oasis-Token=${refreshToken}`,
+        Cookie: `Oasis-Token=${token}`,
         Referer: "https://yuewen.cn/chats/new",
         ...FAKE_HEADERS,
+        "Oasis-Webid": deviceId,
       },
       timeout: 15000,
       validateStatus: () => true,
@@ -859,11 +873,10 @@ async function getTokenLiveStatus(refreshToken: string) {
   try {
     const {
       accessToken: { raw: accessTokenRaw },
-      refreshToken: { raw: refreshTokenRaw }
+      refreshToken: { raw: refreshTokenRaw },
     } = checkResult(result, refreshToken);
-    return !!(accessTokenRaw && refreshTokenRaw)
-  }
-  catch(err) {
+    return !!(accessTokenRaw && refreshTokenRaw);
+  } catch (err) {
     return false;
   }
 }
