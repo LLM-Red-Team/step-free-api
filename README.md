@@ -1,5 +1,9 @@
 # 跃问YueWen Free 服务
 
+<hr>
+
+<span>[ 中文 | <a href="README_EN.md">English</a> ]</span>
+
 [![](https://img.shields.io/github/license/llm-red-team/step-free-api.svg)](LICENSE)
 ![](https://img.shields.io/github/stars/llm-red-team/step-free-api.svg)
 ![](https://img.shields.io/github/forks/llm-red-team/step-free-api.svg)
@@ -27,7 +31,7 @@ MiniMax（海螺AI）接口转API [hailuo-free-api](https://github.com/LLM-Red-T
 
 深度求索（DeepSeek）接口转API [deepseek-free-api](https://github.com/LLM-Red-Team/deepseek-free-api)
 
-聆心智能 (Emohaa) 接口转API [emohaa-free-api](https://github.com/LLM-Red-Team/emohaa-free-api)
+聆心智能 (Emohaa) 接口转API [emohaa-free-api](https://github.com/LLM-Red-Team/emohaa-free-api)（当前不可用）
 
 ## 目录
 
