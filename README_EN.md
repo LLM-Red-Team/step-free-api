@@ -459,7 +459,7 @@ tcp_nodelay on;
 keepalive_timeout 120;
 ```
 
-### Token统计
+### Token statistics
 
 Since the inference side is not in step-free-api, the token cannot be counted and will be returned as a fixed number!!!!!
 
