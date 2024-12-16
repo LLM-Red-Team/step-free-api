@@ -21,20 +21,22 @@ const RETRY_DELAY = 5000;
 const FAKE_HEADERS = {
   Accept: "*/*",
   "Accept-Encoding": "gzip, deflate, br, zstd",
-  "Accept-Language": "zh-CN,zh;q=0.9",
+  "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
   Origin: "https://yuewen.cn",
   "Connect-Protocol-Version": "1",
   "Oasis-Appid": "10200",
+  "Oasis-Mode": "2",
   "Oasis-Platform": "web",
   "Sec-Ch-Ua":
-    '"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"',
+    '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
   "Sec-Ch-Ua-Mobile": "?0",
   "Sec-Ch-Ua-Platform": '"Windows"',
   "Sec-Fetch-Dest": "empty",
   "Sec-Fetch-Mode": "cors",
   "Sec-Fetch-Site": "same-origin",
   "User-Agent":
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+  "X-Waf-Client-Type": "fetch_sdk"
 };
 // 文件最大大小
 const FILE_MAX_SIZE = 100 * 1024 * 1024;

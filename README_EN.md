@@ -19,6 +19,10 @@ Ali Tongyi (Qwen) API to API [qwen-free-api](https://github.com/LLM-Red-Team/qwe
 
 ZhipuAI (ChatGLM) API to API [glm-free-api](https://github.com/LLM-Red-Team/glm-free-api)
 
+ByteDance (Doubao) API to API [doubao-free-api](https://github.com/LLM-Red-Team/doubao-free-api)
+
+ByteDance (Jimeng) API to API [jimeng-free-api](https://github.com/LLM-Red-Team/jimeng-free-api)
+
 Meta Sota (metaso) API to API [metaso-free-api](https://github.com/LLM-Red-Team/metaso-free-api)
 
 Iflytek Spark (Spark) API to API [spark-free-api](https://github.com/LLM-Red-Team/spark-free-api)
@@ -28,7 +32,6 @@ Lingxin Intelligence (Emohaa) API to API [emohaa-free-api](https://github.com/LL
 ## Table of Contents
 
 * [Announcement](#Announcement)
-* [Online experience](#Online-Experience)
 * [Effect Examples](#Effect-Examples)
 * [Access preparation](#Access-Preparation)
     * [Multiple account access](#Multi-Account-Access)
